@@ -26,30 +26,6 @@ export type AuthPayload =
   | { role: "admin"; adminId: string; email: string }
   | { role: "user"; sessionId: string };
 
-/* export enum SessionState {
-  ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
-  FINISHED = "FINISHED",
-  MINIMIZED = "MINIMIZED",
-  BANNED = "BANNED",
-}
-
-export enum ActionState {
-  CC = "CC",
-  CC_WAIT_ACTION = "CC_WAIT_ACTION",
-  CC_ERROR="CC_ERROR",
-  AUTH = "AUTH",
-  AUTH_WAIT_ACTION = "AUTH_WAIT_ACTION",
-  AUTH_ERROR = "AUTH_ERROR",
-  DINAMIC = "DINAMIC",
-  DINAMIC_WAIT_ACTION = "DINAMIC_WAIT_ACTION",
-  DINAMIC_ERROR= "DINAMIC_ERROR",
-  OTP = "OTP",
-  OTP_WAIT_ACTION = "OTP_WAIT_ACTION",
-  OTP_ERROR= "OTP_ERROR",
-  DONE = "DONE",
-} */
-
 const PORT = Number(process.env.PORT || 3005);
 const ORIGIN = process.env.LARAVEL_ORIGIN || "http://localhost:8000";
 
@@ -438,7 +414,8 @@ app.post("/api/sessions", async (_req, res) => {
   }
 
   console.log(data);
-
+  
+  
   const session = await repo.create(data);
   const sessionToken = tokens.signUser(session.id);
 
@@ -448,10 +425,23 @@ app.post("/api/sessions", async (_req, res) => {
   res.json({ sessionId: session.id, sessionToken, session });
 });
 
+// Re-emitir token de user para una sesión existente
+app.post("/api/sessions/:id/issue-token", async (req, res) => {
+  const id = req.params.id;
+
+  const s = await repo.findById(id);
+  if (!s) return res.status(404).json({ error: "not_found" });
+
+  const sessionToken = tokens.signUser(id);
+  return res.json({ sessionId: id, sessionToken });
+});
+
+
 app.get("/api/sessions/:id", async (req, res) => {
   const session = await repo.findById(req.params.id);
   if (!session) return res.status(404).json({ error: "not_found" });
-  res.json(session);
+  const sessionToken = tokens.signUser(session.id);
+  res.json({ sessionId: session.id, sessionToken, session });
 });
 
 // REST: emitir token admin (lo llama Laravel)

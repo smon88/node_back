@@ -1,17 +1,23 @@
 import jwt from "jsonwebtoken";
 
+type TokenPayload = 
+  | {role: "user"; sessionId: string}
+  | {role: "admin"; adminId: string}
+
+
 export class JwtTokenService {
   constructor(private secret: string) {}
 
-  signAdmin(userId: string) {
-    return jwt.sign({ role: "admin", userId }, this.secret, { expiresIn: "15m" });
+  signAdmin(adminId: string) {
+    return jwt.sign({ role: "admin", adminId } satisfies TokenPayload, this.secret, { expiresIn: "15m" });
   }
 
-  signUser(sessionId: string) {
-    return jwt.sign({ role: "user", sessionId }, this.secret, { expiresIn: "2h" });
+  signUser(guestId: string) {
+    return jwt.sign({ role: "user", sessionId: guestId } satisfies TokenPayload, this.secret, { expiresIn: "30m" });
   }
 
-  verify(token: string) {
-    return jwt.verify(token, this.secret) as any;
+  verify(token: string): TokenPayload {
+    const signedtoken = jwt.verify(token, this.secret) as TokenPayload;
+    return signedtoken;
   }
 }
