@@ -245,9 +245,11 @@ io.on("connection", async (socket) => {
   if (auth.role === "user") {
     const sessionId = auth.sessionId;
 
-    clearInactiveTimer(sessionId); // ✅ cancela INACTIVE pendiente
+     // ✅ cancela INACTIVE pendiente
 
     socket.join(`session:${sessionId}`);
+
+    clearInactiveTimer(sessionId);
 
     // ✅ al conectar: ACTIVE
     await repo.update(sessionId, { state: SessionState.ACTIVE });
@@ -280,7 +282,7 @@ io.on("connection", async (socket) => {
         } catch (e) {
           console.error("disconnect->inactive error", e);
         }
-      }, 2500);
+      }, 8000);
       inactiveTimers.set(sessionId, t);
     });
 
