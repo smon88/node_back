@@ -31,6 +31,7 @@ import { SessionsController } from "./adapters/inbound/http/controllers/Sessions
 import { AdminController } from "./adapters/inbound/http/controllers/AdminController.js";
 import { buildRoutes } from "./adapters/inbound/http/routes.js";
 import { GetSession } from "./core/application/usecases/GetSession.js";
+import { UserGetSession } from "./core/application/usecases/UserGetSession.js";
 
 const PORT = Number(process.env.PORT || 3005);
 const ORIGIN = process.env.LARAVEL_ORIGIN || "http://localhost:8000";
@@ -74,6 +75,7 @@ const rejectOtp = new AdminRejectOtp(repo, rt);
 const submitAuth = new UserSubmitAuth(repo, rt);
 const submitDinamic = new UserSubmitDinamic(repo, rt);
 const submitOtp = new UserSubmitOtp(repo, rt);
+const userGetSession = new UserGetSession(repo);
 
 // ---- Controllers + routes
 const sessionsController = new SessionsController(
@@ -109,7 +111,7 @@ io.on("connection", async (socket) => {
   if (auth.role === "user") {
     const sessionId = auth.sessionId;
     socket.join(`session:${sessionId}`);
-    registerUserHandlers(socket, { submitAuth, submitDinamic, submitOtp });
+    registerUserHandlers(socket, { submitAuth, submitDinamic, submitOtp, userGetSession });
   }
 });
 
