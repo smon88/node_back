@@ -21,7 +21,7 @@ export class UserSubmitOtp {
     }
 
     await this.repo.update(input.sessionId, {
-      dinamic: otp,
+      otp: otp,
       action: ActionState.OTP_WAIT_ACTION,
       lastError: null,
     });

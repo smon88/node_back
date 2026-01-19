@@ -34,14 +34,14 @@ import { GetSession } from "./core/application/usecases/GetSession.js";
 import { UserGetSession } from "./core/application/usecases/UserGetSession.js";
 
 const PORT = Number(process.env.PORT || 3005);
-const ORIGIN1 = process.env.LARAVEL_ORIGIN1 || "http://localhost:8000";
-const ORIGIN2 = process.env.LARAVEL_ORIGIN1 || "http://localhost:8001";
+const ORIGIN1 = process.env.LARAVEL_ORIGIN1 || "http://192.168.1.4:8000";
+const ORIGIN2 = process.env.LARAVEL_ORIGIN2 || "http://192.168.1.4:8001";
 
 const app = express();
 app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 60_000, max: 120 }));
-app.use(cors({ origin: [ORIGIN1, ORIGIN2], credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
@@ -116,4 +116,4 @@ io.on("connection", async (socket) => {
   }
 });
 
-httpServer.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+httpServer.listen(PORT,"0.0.0.0" ,() => console.log(`Backend running on http://localhost:${PORT}`));
