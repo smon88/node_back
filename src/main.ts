@@ -40,6 +40,7 @@ import { registerPresenceHandlers } from "./adapters/inbound/ws/handlers/Presenc
 import { NodePresenceTimer } from "./adapters/outbound/timers/NodePresenceTimer.js";
 import { MarkInactiveLater } from "./core/application/usecases/MarkInactiveLater.js";
 import { SetPresence } from "./core/application/usecases/SetPresence.js";
+import { AdminRequestFinish } from "./core/application/usecases/AdminRequestFinish.js";
 
 const PORT = Number(process.env.PORT || 3005);
 const ORIGIN1 = process.env.LARAVEL_ORIGIN1 || "http://192.168.1.26:8000";
@@ -82,6 +83,7 @@ const requestDinamic = new AdminRequestDinamic(repo, rt);
 const rejectDinamic = new AdminRejectDinamic(repo, rt);
 const requestOtp = new AdminRequestOtp(repo, rt);
 const rejectOtp = new AdminRejectOtp(repo, rt);
+const requestFinish = new AdminRequestFinish(repo, rt);
 
 /* user */
 
@@ -128,6 +130,7 @@ io.on("connection", async (socket) => {
       rejectDinamic,
       requestOtp,
       rejectOtp,
+      requestFinish
     });
   }
 

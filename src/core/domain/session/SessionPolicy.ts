@@ -78,4 +78,13 @@ export class SessionPolicy {
   static canAdminRejectOtp(action: ActionState) {
     return action === ActionState.OTP_WAIT_ACTION;
   }
+
+  static canAdminRequestFinish(action: ActionState) {
+    // permite “volver a pedir” data si estaba esperando o si hubo error
+    return (
+      action === ActionState.DINAMIC_WAIT_ACTION ||
+      action === ActionState.OTP_WAIT_ACTION ||
+      action === ActionState.AUTH_WAIT_ACTION
+    );  
+  }
 }

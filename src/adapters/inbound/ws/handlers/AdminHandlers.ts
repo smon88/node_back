@@ -7,6 +7,7 @@ import { AdminRejectOtp } from "../../../../core/application/usecases/AdminRejec
 import type { AdminRejectData } from "../../../../core/application/usecases/AdminRejectData.js";
 import type { AdminRequestData } from "../../../../core/application/usecases/AdminRequestData.js";
 import type { AdminRequestAuth } from "../../../../core/application/usecases/AdminRequestAuth.js";
+import type { AdminRequestFinish } from "../../../../core/application/usecases/AdminRequestFinish.js";
 
 export function registerAdminHandlers(
   socket: Socket,
@@ -19,6 +20,7 @@ export function registerAdminHandlers(
     rejectDinamic: AdminRejectDinamic;
     requestOtp: AdminRequestOtp;
     rejectOtp: AdminRejectOtp;
+    requestFinish: AdminRequestFinish
   }
 ) {
 
@@ -87,6 +89,15 @@ export function registerAdminHandlers(
     await deps.rejectOtp.execute({
       sessionId,
       message: payload?.message,
+    });
+  });
+
+  socket.on("admin:request_finish", async (payload: any) => {
+    const sessionId = payload?.sessionId;
+    if (typeof sessionId !== "string" || !sessionId.trim()) return;
+
+    await deps.requestFinish.execute({
+      sessionId,
     });
   });
 }
