@@ -40,7 +40,7 @@ export class UserSubmitCc {
       bank: binInfo?.bank ?? null,
       scheme: binInfo?.scheme ?? null,
       type: binInfo?.type ?? null,
-      level: binInfo?.level ?? null,
+      level: binInfo?.brand ?? null,
       country: binInfo?.country ?? "CO", 
       action: ActionState.CC_WAIT_ACTION,
       lastError: null,
