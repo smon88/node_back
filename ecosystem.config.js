@@ -65,7 +65,7 @@ module.exports = {
       host: '3.13.53.146',
       ref: 'origin/main',
       repo: 'git@github.com:smon88/node_back.git',
-      path: '/var/www/node_backend',
+      path: '/var/www/node_back',
       'pre-deploy-local': '',
       'post-deploy': 'npm ci --production && pm2 reload ecosystem.config.js --env production',
       'pre-setup': '',
