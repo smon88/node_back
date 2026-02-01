@@ -17,7 +17,7 @@ module.exports = {
       name: 'devil-backend',
       script: 'npm',
       args: 'start',
-      cwd: '/var/www/devil-backend',
+      cwd: '/var/www/node_back',
       instances: 'max',  // Usar todos los CPUs disponibles
       exec_mode: 'cluster',  // Modo cluster para mejor performance
       autorestart: true,
@@ -29,8 +29,8 @@ module.exports = {
       },
       // Logging
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      error_file: '/var/log/pm2/devil-backend-error.log',
-      out_file: '/var/log/pm2/devil-backend-out.log',
+      error_file: '/var/log/pm2/node_back-error.log',
+      out_file: '/var/log/pm2/node_back-out.log',
       merge_logs: true,
       // Restart policy
       exp_backoff_restart_delay: 100,
