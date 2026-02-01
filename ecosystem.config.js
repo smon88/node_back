@@ -61,11 +61,11 @@ module.exports = {
   // Deploy configuration (opcional - para pm2 deploy)
   deploy: {
     production: {
-      user: 'ubuntu',
-      host: 'YOUR_SERVER_IP',
+      user: 'dev1lb0y',
+      host: '3.13.53.146',
       ref: 'origin/main',
-      repo: 'git@github.com:YOUR_USER/devil-backend.git',
-      path: '/var/www/devil-backend',
+      repo: 'git@github.com:smon88/node_back.git',
+      path: '/var/www/node_backend',
       'pre-deploy-local': '',
       'post-deploy': 'npm ci --production && pm2 reload ecosystem.config.js --env production',
       'pre-setup': '',
