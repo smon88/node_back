@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "esp_back",
+  "name": "node_back",
   "version": "1.0.0",
   "main": "src/main.ts",
   "configurations": [

@@ -1,0 +1,159 @@
+# ============================================
+# Devil Panels - CI/CD Pipeline for Node Backend
+# ============================================
+# Copiar este archivo a tu repositorio del backend en:
+# .github/workflows/deploy-backend.yml
+#
+# Secrets requeridos en GitHub:
+#   - SSH_PRIVATE_KEY: Clave SSH privada para conectar al servidor
+#   - SSH_HOST: IP o hostname del servidor
+#   - SSH_USER: Usuario SSH (ej: ubuntu)
+
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ============================================
+  # Job 1: Test & Lint
+  # ============================================
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test --if-present
+        continue-on-error: true
+        env:
+          NODE_ENV: test
+          REDIS_URL: redis://localhost:6379
+
+  # ============================================
+  # Job 2: Deploy to Production
+  # ============================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            cd /var/www/devil-backend
+
+            # Pull cambios
+            git fetch origin
+            git reset --hard origin/main
+
+            # Instalar dependencias
+            npm ci --production
+
+            # Ejecutar migraciones si existen
+            if [ -f "prisma/schema.prisma" ]; then
+              npx prisma migrate deploy
+              npx prisma generate
+            fi
+
+            # Reload con PM2 (zero-downtime)
+            if pm2 describe devil-backend > /dev/null 2>&1; then
+              pm2 reload devil-backend --update-env
+            else
+              pm2 start npm --name "devil-backend" -- start
+            fi
+
+            # Guardar estado PM2
+            pm2 save
+
+            # Verificar que esta corriendo
+            sleep 3
+            pm2 status devil-backend
+          ENDSSH
+
+      - name: Notify deployment success
+        if: success()
+        run: echo "Backend deployed successfully!"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: echo "Backend deployment failed!"
+
+  # ============================================
+  # Job 3: Health Check
+  # ============================================
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+
+    steps:
+      - name: Wait for deployment
+        run: sleep 15
+
+      - name: Check API health
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://api.${{ secrets.DOMAIN }}/health)
+          if [ "$response" != "200" ]; then
+            echo "Health check failed with status: $response"
+            exit 1
+          fi
+          echo "API is healthy (status: $response)"
+
+      - name: Check WebSocket
+        run: |
+          # Verificar que el endpoint de socket.io responde
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://api.${{ secrets.DOMAIN }}/socket.io/?EIO=4&transport=polling")
+          if [ "$response" != "200" ]; then
+            echo "WebSocket health check failed with status: $response"
+            exit 1
+          fi
+          echo "WebSocket is healthy (status: $response)"
