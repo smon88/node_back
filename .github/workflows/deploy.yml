@@ -88,7 +88,7 @@ jobs:
       - name: Deploy to server
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
-            cd /var/www/devil-backend
+            cd /var/www/node_back
 
             # Pull cambios
             git fetch origin
