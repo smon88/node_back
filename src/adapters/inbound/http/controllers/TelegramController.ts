@@ -7,21 +7,24 @@ export class TelegramController {
     private webhookSecret?: string
   ) {}
 
-  webhook = async (req: Request, res: Response) => {
-    // Validar webhook secret si está configurado
-    if (this.webhookSecret) {
-      const providedSecret = req.header("X-Telegram-Bot-Api-Secret-Token");
-      if (providedSecret !== this.webhookSecret) {
-        return res.status(401).json({ error: "unauthorized" });
-      }
+  webhook = (req: Request, res: Response) => {
+  // 1) Validar webhook secret
+  if (this.webhookSecret) {
+    const providedSecret = req.header("X-Telegram-Bot-Api-Secret-Token");
+    if (!providedSecret || providedSecret !== this.webhookSecret) {
+      return res.sendStatus(401);
     }
+  }
 
-    try {
-      await this.handleTelegramUpdate.execute(req.body);
-      res.json({ ok: true });
-    } catch (error) {
+  // 2) Responder de inmediato (Telegram no necesita más)
+  res.sendStatus(200);
+
+  // 3) Procesar en “background” dentro del mismo proceso
+  // (sin bloquear la respuesta)
+  Promise.resolve()
+    .then(() => this.handleTelegramUpdate.execute(req.body))
+    .catch((error) => {
       console.error("Error handling Telegram update:", error);
-      res.json({ ok: true }); // Siempre retornar ok para evitar reintentos de Telegram
-    }
-  };
+    });
+};
 }
