@@ -1,4 +1,5 @@
 import type { TelegramGateway } from "../../../core/application/ports/TelegramGateway.js";
+import { z } from "zod";
 
 export class TelegramBotService implements TelegramGateway {
   private baseUrl: string;
@@ -9,6 +10,9 @@ export class TelegramBotService implements TelegramGateway {
 
   async sendMessage(chatId: string, text: string): Promise<boolean> {
     try {
+      const TelegramResponseSchema = z.object({
+        ok: z.boolean(),
+      });
       const response = await fetch(`${this.baseUrl}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -19,7 +23,7 @@ export class TelegramBotService implements TelegramGateway {
         }),
       });
 
-      const data = await response.json();
+      const data = TelegramResponseSchema.parse(await response.json());
       return data.ok === true;
     } catch (error) {
       console.error("Error sending Telegram message:", error);

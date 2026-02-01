@@ -66,13 +66,20 @@ export class ProjectController {
     res.json({ projects });
   };
 
+  asSingleString = (v: unknown): string | null => {
+    if (typeof v === "string" && v.trim() !== "") return v;
+    if (Array.isArray(v) && typeof v[0] === "string" && v[0].trim() !== "") return v[0];
+    return null;
+  }
+
   getMembers = async (req: Request, res: Response) => {
     const providedSecret = req.header("X-SHARED-SECRET");
     if (!providedSecret || providedSecret !== this.sharedSecret) {
       return res.status(401).json({ error: "unauthorized" });
     }
 
-    const { slug } = req.params;
+    const slug = this.asSingleString(req.params.slug ?? req.query.slug);
+    if (!slug) return res.status(400).json({ ok: false, error: "missing_slug" });
     const statusFilter = req.query.status as string | undefined;
 
     const project = await this.projectRepo.findBySlug(slug);
@@ -92,7 +99,8 @@ export class ProjectController {
       return res.status(401).json({ error: "unauthorized" });
     }
 
-    const { slug } = req.params;
+    const slug = this.asSingleString(req.params.slug ?? req.query.slug);
+    if (!slug) return res.status(400).json({ ok: false, error: "missing_slug" });
     const project = await this.projectRepo.findBySlug(slug);
 
     if (!project) {

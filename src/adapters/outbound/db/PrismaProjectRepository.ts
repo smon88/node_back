@@ -21,7 +21,7 @@ export class PrismaProjectRepository implements ProjectRepository {
 
   async findAll(onlyActive = true): Promise<Project[]> {
     return prisma.project.findMany({
-      where: onlyActive ? { isActive: true } : undefined,
+      ...(onlyActive ? { where: { isActive: true } } : {}),
       orderBy: { createdAt: "desc" },
     });
   }

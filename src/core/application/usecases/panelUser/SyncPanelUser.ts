@@ -43,11 +43,12 @@ export class SyncPanelUser {
           },
         };
       }
+      const alias = input.alias ?? null;
 
       const panelUser = await this.panelUserRepo.create({
         laravelId: input.laravelId,
         username: input.username,
-        alias: input.alias,
+        alias: alias,
         tgUsername: input.tgUsername?.replace("@", "") || null,
         role,
       });
@@ -64,10 +65,12 @@ export class SyncPanelUser {
       };
     }
 
+
     if (input.action === "update") {
+      const alias = input.alias ?? null;
       const panelUser = await this.panelUserRepo.updateByLaravelId(input.laravelId, {
         username: input.username,
-        alias: input.alias,
+        alias: alias,
         tgUsername: input.tgUsername?.replace("@", "") || null,
         role,
       });

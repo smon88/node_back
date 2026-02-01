@@ -1,3 +1,4 @@
+import type { Project } from "@prisma/client";
 import type { ProjectRepository } from "../../ports/ProjectRepository.js";
 
 type SyncProjectInput = {
@@ -42,7 +43,7 @@ export class SyncProject {
         slug: input.slug,
         name: input.name,
         url: input.url,
-        description: input.description,
+        description: input.description ?? null,
       });
 
       return {
@@ -63,12 +64,20 @@ export class SyncProject {
         return { ok: false as const, error: "project_not_found" };
       }
 
-      const project = await this.projectRepo.update(existing.id, {
+      const patch: Partial<Omit<Project, "id" | "createdAt">> = {
         name: input.name,
         url: input.url,
-        description: input.description,
-        isActive: input.isActive,
-      });
+      };
+
+      if (input.description !== undefined) {
+        patch.description = input.description ?? null;
+      }
+
+      if (input.isActive !== undefined) {
+        patch.isActive = input.isActive;
+      }
+
+      const project = await this.projectRepo.update(existing.id, patch);
 
       return {
         ok: true as const,
