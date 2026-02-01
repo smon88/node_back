@@ -68,9 +68,9 @@ import { ProjectController } from "./adapters/inbound/http/controllers/ProjectCo
 
 
 const PORT = Number(process.env.PORT || 3005);
-const ORIGIN1 = process.env.LARAVEL_ORIGIN1 || "http://192.168.1.26:8000";
-const ORIGIN2 = process.env.LARAVEL_ORIGIN2 || "http://192.168.1.26:8001";
-
+const PANEL = process.env.PANEL_HOST || "";
+const LTM1 = process.env.LTM1_HOST || "";
+const ORIGINS = [PANEL, LTM1];
 const app = express();
 app.use(express.json());
 app.use(helmet());
@@ -84,11 +84,11 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.use(cors({ origin: "*", credentials: true }));
+app.use(cors({ origin: ORIGINS, credentials: true }));
 
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: "*", credentials: true },
+  cors: { origin: ORIGINS, credentials: true },
 });
 
 // ---- Outbound adapters
