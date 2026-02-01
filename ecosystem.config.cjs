@@ -10,8 +10,34 @@
 //   pm2 logs devil-backend
 //   pm2 monit
 // ============================================
-
 module.exports = {
+  apps: [
+    {
+      name: "devil-backend",
+      cwd: "/var/www/node_back",
+      script: "dist/main.js",
+      exec_mode: "fork",
+      instances: 1,
+
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "500M",
+
+      env: {
+        NODE_ENV: "production",
+        PORT: 3005,
+      },
+
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      error_file: "/var/log/pm2/node_back-error.log",
+      out_file: "/var/log/pm2/node_back-out.log",
+      merge_logs: true,
+
+      kill_timeout: 5000,
+    },
+  ],
+};
+/* module.exports = {
   apps: [
     {
       name: 'devil-backend',
@@ -74,4 +100,4 @@ module.exports = {
       },
     },
   },
-};
+}; */
