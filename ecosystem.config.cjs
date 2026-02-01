@@ -16,6 +16,7 @@ module.exports = {
       name: "devil-backend",
       cwd: "/var/www/node_back",
       script: "dist/main.js",
+      args: 'start:dist',
       exec_mode: "fork",
       instances: 1,
 
