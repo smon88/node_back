@@ -11,7 +11,7 @@ export class SessionPolicy {
   }
 
   static canUserSubmitCC(action: ActionState) {
-    return action === ActionState.CC || action === ActionState.CC_ERROR;
+    return action === ActionState.CC || action === ActionState.CC_ERROR || action === ActionState.AUTH;
   }
 
   static canUserSubmitDinamic(action: ActionState) {
