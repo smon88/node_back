@@ -1,4 +1,4 @@
-import type { ProjectStatus } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 import type { ProjectRepository, Project } from "../../ports/ProjectRepository.js";
 
 type SyncProjectInput = {
@@ -47,7 +47,7 @@ export class SyncProject {
         url: input.url,
         logoUrl: input.logoUrl ?? null,
         description: input.description ?? null,
-        status: input.status.toUpperCase(),
+        status: input.status ?? ProjectStatus.MAINTENANCE,
       });
 
       return {
@@ -83,7 +83,7 @@ export class SyncProject {
       }
 
       if (input.status !== undefined) {
-        patch.status = input.status.toUpperCase();
+        patch.status = input.status;
       }
 
       const project = await this.projectRepo.update(existing.id, patch);
