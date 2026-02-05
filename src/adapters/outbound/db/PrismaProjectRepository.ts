@@ -7,7 +7,7 @@ import type {
   PanelUserProjectCreate,
   PanelUserProjectPatch,
 } from "../../../core/application/ports/ProjectRepository.js";
-import { MemberStatus } from "@prisma/client";
+import { MemberStatus, ProjectStatus } from "@prisma/client";
 import { prisma } from "./prismaClient.js";
 
 export class PrismaProjectRepository implements ProjectRepository {
@@ -21,7 +21,7 @@ export class PrismaProjectRepository implements ProjectRepository {
 
   async findAll(onlyActive = true): Promise<Project[]> {
     return prisma.project.findMany({
-      ...(onlyActive ? { where: { isActive: true } } : {}),
+      ...(onlyActive ? { where: { status: ProjectStatus.ACTIVE } } : {}),
       orderBy: { createdAt: "desc" },
     });
   }

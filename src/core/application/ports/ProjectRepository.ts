@@ -1,12 +1,13 @@
-import { ProjectRole, MemberStatus } from "@prisma/client";
+import { ProjectRole, MemberStatus, ProjectStatus } from "@prisma/client";
 
 export type Project = {
   id: string;
   slug: string;
   name: string;
   url: string;
+  logoUrl: string | null;
   description: string | null;
-  isActive: boolean;
+  status: ProjectStatus;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -15,7 +16,9 @@ export type ProjectCreate = {
   slug: string;
   name: string;
   url: string;
+  logoUrl?: string | null;
   description?: string | null;
+  status?: ProjectStatus;
 };
 
 export type ProjectPatch = Partial<Omit<Project, "id" | "createdAt">>;

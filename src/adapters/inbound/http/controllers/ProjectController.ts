@@ -14,14 +14,14 @@ export class ProjectController {
 
   sync = async (req: Request, res: Response) => {
     const providedSecret = req.header("X-SHARED-SECRET");
-    const { slug, name, url, description, isActive, action } = req.body;
+    const { slug, name, url, logoUrl, description, status, action } = req.body;
 
     if (!slug || !name || !url || !action) {
       return res.status(400).json({ error: "missing_required_fields" });
     }
 
     const result = await this.syncProject.execute(
-      { slug, name, url, description, isActive, action },
+      { slug, name, url, logoUrl, description, status, action },
       providedSecret
     );
 
@@ -112,7 +112,8 @@ export class ProjectController {
       slug: project.slug,
       name: project.name,
       url: project.url,
-      isActive: project.isActive,
+      logoUrl: project.logoUrl,
+      status: project.status,
     });
   };
 }

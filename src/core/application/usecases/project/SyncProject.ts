@@ -1,12 +1,13 @@
-import type { Project } from "@prisma/client";
-import type { ProjectRepository } from "../../ports/ProjectRepository.js";
+import type { ProjectStatus } from "@prisma/client";
+import type { ProjectRepository, Project } from "../../ports/ProjectRepository.js";
 
 type SyncProjectInput = {
   slug: string;
   name: string;
   url: string;
+  logoUrl?: string | null;
   description?: string | null;
-  isActive?: boolean;
+  status?: ProjectStatus;
   action: "create" | "update" | "delete";
 };
 
@@ -34,7 +35,8 @@ export class SyncProject {
             slug: existing.slug,
             name: existing.name,
             url: existing.url,
-            isActive: existing.isActive,
+            logoUrl: existing.logoUrl,
+            status: existing.status,
           },
         };
       }
@@ -43,7 +45,9 @@ export class SyncProject {
         slug: input.slug,
         name: input.name,
         url: input.url,
+        logoUrl: input.logoUrl ?? null,
         description: input.description ?? null,
+        status: input.status.toUpperCase(),
       });
 
       return {
@@ -53,7 +57,8 @@ export class SyncProject {
           slug: project.slug,
           name: project.name,
           url: project.url,
-          isActive: project.isActive,
+          logoUrl: project.logoUrl,
+          status: project.status.toUpperCase(),
         },
       };
     }
@@ -69,12 +74,16 @@ export class SyncProject {
         url: input.url,
       };
 
+      if (input.logoUrl !== undefined) {
+        patch.logoUrl = input.logoUrl ?? null;
+      }
+
       if (input.description !== undefined) {
         patch.description = input.description ?? null;
       }
 
-      if (input.isActive !== undefined) {
-        patch.isActive = input.isActive;
+      if (input.status !== undefined) {
+        patch.status = input.status.toUpperCase();
       }
 
       const project = await this.projectRepo.update(existing.id, patch);
@@ -86,7 +95,8 @@ export class SyncProject {
           slug: project.slug,
           name: project.name,
           url: project.url,
-          isActive: project.isActive,
+          logoUrl: project.logoUrl,
+          status: project.status,
         },
       };
     }

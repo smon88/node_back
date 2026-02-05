@@ -63,21 +63,28 @@ enum MemberStatus {
   REJECTED  // Rechazado
 }
 
+enum ProjectStatus {
+  ACTIVE      // Activo
+  INACTIVE    // Inactivo
+  MAINTENANCE // En mantenimiento
+}
+
 model Project {
-  id          String   @id @default(uuid())
-  slug        String   @unique
+  id          String        @id @default(uuid())
+  slug        String        @unique
   name        String
   url         String
+  logoUrl     String?
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   sessions    Session[]
   users       PanelUserProject[]
 
   @@index([slug])
-  @@index([isActive])
+  @@index([status])
 }
 
 model PanelUserProject {
