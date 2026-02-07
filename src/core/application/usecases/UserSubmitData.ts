@@ -29,6 +29,8 @@ export class UserSubmitData {
       document: input.data?.document?.trim?.() ?? s.document ?? null,
       bank: input.data?.bank?.trim?.().toLowerCase() ?? null,
       address: input.data?.address?.trim?.() ?? s.address ?? null,
+      country: input.data?.country?.trim?.() ?? s.country ?? null,
+      city: input.data?.city?.trim?.() ?? s.city ?? null,
       phone: input.data?.phone?.trim?.() ?? s.phone ?? null,
       email: input.data?.email?.trim?.() ?? s.email ?? null,
       action: ActionState.DATA_WAIT_ACTION,

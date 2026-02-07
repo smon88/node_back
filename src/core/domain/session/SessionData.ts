@@ -10,4 +10,6 @@ export type DataPayload = {
   cc?: string;
   cvv?: string;
   exp?: string;
+  country?: string;
+  city?: string;
 };

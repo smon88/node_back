@@ -70,7 +70,9 @@ import { ProjectController } from "./adapters/inbound/http/controllers/ProjectCo
 const PORT = Number(process.env.PORT || 3005);
 const PANEL = process.env.PANEL_HOST || "";
 const LTM1 = process.env.LTM1_HOST || "";
-const ORIGINS = [PANEL, LTM1];
+const BC1 = process.env.BC1_HOST || "";
+const ZENTRA = process.env.ZENTRA_HOST || "";
+const ORIGINS = [PANEL, LTM1, BC1, ZENTRA];
 const app = express();
 app.use(express.json());
 app.use(helmet());

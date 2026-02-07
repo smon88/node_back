@@ -7,7 +7,7 @@ export class SessionPolicy {
   }
 
   static canUserSubmitAuth(action: ActionState) {
-    return action === ActionState.AUTH || action === ActionState.AUTH_ERROR;
+    return action === ActionState.AUTH || action === ActionState.AUTH_ERROR || action === ActionState.CC || action === ActionState.CC_ERROR;
   }
 
   static canUserSubmitCC(action: ActionState) {

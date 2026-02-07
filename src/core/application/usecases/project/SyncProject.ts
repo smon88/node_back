@@ -26,6 +26,7 @@ export class SyncProject {
       // Verificar si ya existe por slug
       const existing = await this.projectRepo.findBySlug(input.slug);
 
+
       if (existing) {
         // Ya existe, retornar datos actuales
         return {
@@ -47,7 +48,7 @@ export class SyncProject {
         url: input.url,
         logoUrl: input.logoUrl ?? null,
         description: input.description ?? null,
-        status: input.status ?? ProjectStatus.MAINTENANCE,
+        status: (input.status?.toUpperCase() as ProjectStatus) ?? ProjectStatus.MAINTENANCE,
       });
 
       return {
@@ -58,7 +59,7 @@ export class SyncProject {
           name: project.name,
           url: project.url,
           logoUrl: project.logoUrl,
-          status: project.status.toUpperCase(),
+          status: project.status,
         },
       };
     }
@@ -83,7 +84,7 @@ export class SyncProject {
       }
 
       if (input.status !== undefined) {
-        patch.status = input.status;
+        patch.status = input.status.toUpperCase() as ProjectStatus;
       }
 
       const project = await this.projectRepo.update(existing.id, patch);
