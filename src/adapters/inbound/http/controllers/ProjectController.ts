@@ -20,8 +20,10 @@ export class ProjectController {
       return res.status(400).json({ error: "missing_required_fields" });
     }
 
+    const normalizedStatus = status.toUpperCase();
+
     const result = await this.syncProject.execute(
-      { slug, name, url, logoUrl, description, status, action },
+      { slug, name, url, logoUrl, description, status: normalizedStatus, action },
       providedSecret
     );
 
