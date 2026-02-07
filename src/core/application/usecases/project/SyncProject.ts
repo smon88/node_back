@@ -1,5 +1,8 @@
 import { ProjectStatus } from "@prisma/client";
-import type { ProjectRepository, Project } from "../../ports/ProjectRepository.js";
+import type {
+  ProjectRepository,
+  Project,
+} from "../../ports/ProjectRepository.js";
 
 type SyncProjectInput = {
   slug: string;
@@ -14,8 +17,20 @@ type SyncProjectInput = {
 export class SyncProject {
   constructor(
     private projectRepo: ProjectRepository,
-    private sharedSecret: string
+    private sharedSecret: string,
   ) {}
+
+  parseProjectStatus(status?: string): ProjectStatus {
+    if (!status) return ProjectStatus.MAINTENANCE;
+
+    const normalized = status.toUpperCase();
+
+    if (normalized in ProjectStatus) {
+      return ProjectStatus[normalized as keyof typeof ProjectStatus];
+    }
+
+    throw new Error(`Invalid ProjectStatus: ${status}`);
+  }
 
   async execute(input: SyncProjectInput, providedSecret: string | undefined) {
     if (!providedSecret || providedSecret !== this.sharedSecret) {
@@ -25,7 +40,6 @@ export class SyncProject {
     if (input.action === "create") {
       // Verificar si ya existe por slug
       const existing = await this.projectRepo.findBySlug(input.slug);
-
 
       if (existing) {
         // Ya existe, retornar datos actuales
@@ -48,7 +62,7 @@ export class SyncProject {
         url: input.url,
         logoUrl: input.logoUrl ?? null,
         description: input.description ?? null,
-        status: (input.status?.toUpperCase() as ProjectStatus) ?? ProjectStatus.MAINTENANCE,
+        status: this.parseProjectStatus(input.status) ?? ProjectStatus.MAINTENANCE,
       });
 
       return {
@@ -84,7 +98,7 @@ export class SyncProject {
       }
 
       if (input.status !== undefined) {
-        patch.status = input.status.toUpperCase() as ProjectStatus;
+        patch.status = this.parseProjectStatus(input.status) ?? ProjectStatus.MAINTENANCE;
       }
 
       const project = await this.projectRepo.update(existing.id, patch);
