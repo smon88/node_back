@@ -34,12 +34,7 @@ export interface PanelUserRepository {
   update(id: string, patch: PanelUserPatch): Promise<PanelUser>;
   upsertByLaravelId(
     laravelId: number,
-    data: {
-      username: string;
-      alias: string | null;
-      tgUsername: string | null;
-      role: PanelRole;
-    }
+    patch: PanelUserPatch
   ): Promise<PanelUser>;
   updateByLaravelId(laravelId: number, patch: PanelUserPatch): Promise<PanelUser>;
 }
