@@ -32,9 +32,5 @@ export interface PanelUserRepository {
   findByTgChatId(tgChatId: string): Promise<PanelUser | null>;
   create(data: PanelUserCreate): Promise<PanelUser>;
   update(id: string, patch: PanelUserPatch): Promise<PanelUser>;
-  upsertByLaravelId(
-    laravelId: number,
-    patch: PanelUserPatch
-  ): Promise<PanelUser>;
   updateByLaravelId(laravelId: number, patch: PanelUserPatch): Promise<PanelUser>;
 }

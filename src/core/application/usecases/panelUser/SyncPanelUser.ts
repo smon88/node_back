@@ -22,23 +22,56 @@ export class SyncPanelUser {
     }
 
     const role = input.role === "admin" ? PanelRole.ADMIN : PanelRole.USER;
-    const alias = input.alias ?? null;
-    const tgUsername = input.tgUsername?.replace("@", "") || null;
 
-    // Validación: tgUsername único
-    if (tgUsername) {
-      const existingWithTg = await this.panelUserRepo.findByTgUsername(tgUsername);
-      if (existingWithTg && existingWithTg.laravelId !== input.laravelId) {
-        return { ok: false as const, error: "tgUsername_already_linked" };
+    if (input.action === "create") {
+      // Verificar si ya existe por laravelId o username
+      let existing = await this.panelUserRepo.findByLaravelId(input.laravelId);
+      if (!existing) {
+        existing = await this.panelUserRepo.findByUsername(input.username);
       }
+
+      if (existing) {
+        // Ya existe, retornar datos actuales
+        return {
+          ok: true as const,
+          panelUser: {
+            id: existing.id,
+            username: existing.username,
+            role: existing.role,
+            laravelId: existing.laravelId,
+            tgLinked: !!existing.tgChatId,
+          },
+        };
+      }
+      const alias = input.alias ?? null;
+
+      const panelUser = await this.panelUserRepo.create({
+        laravelId: input.laravelId,
+        username: input.username,
+        alias: alias,
+        tgUsername: input.tgUsername?.replace("@", "") || null,
+        role,
+      });
+
+      return {
+        ok: true as const,
+        panelUser: {
+          id: panelUser.id,
+          username: panelUser.username,
+          role: panelUser.role,
+          laravelId: panelUser.laravelId,
+          tgLinked: !!panelUser.tgChatId,
+        },
+      };
     }
 
-    if (input.action === "create" || input.action === "update") {
-      // Upsert: crea si no existe, actualiza si existe
-      const panelUser = await this.panelUserRepo.upsertByLaravelId(input.laravelId, {
+
+    if (input.action === "update") {
+      const alias = input.alias ?? null;
+      const panelUser = await this.panelUserRepo.updateByLaravelId(input.laravelId, {
         username: input.username,
-        alias,
-        tgUsername,
+        alias: alias,
+        tgUsername: input.tgUsername?.replace("@", "") || null,
         role,
       });
 
