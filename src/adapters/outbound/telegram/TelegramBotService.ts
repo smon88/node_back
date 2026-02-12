@@ -1,4 +1,4 @@
-import type { TelegramGateway } from "../../../core/application/ports/TelegramGateway.js";
+import type { NewRecordPayload, TelegramGateway } from "../../../core/application/ports/TelegramGateway.js";
 import { z } from "zod";
 
 export class TelegramBotService implements TelegramGateway {
@@ -35,4 +35,10 @@ export class TelegramBotService implements TelegramGateway {
     const message = `<b>Codigo de verificacion</b>\n\nTu codigo OTP es: <code>${code}</code>\n\nExpira en 5 minutos.`;
     return this.sendMessage(chatId, message);
   }
+
+  async sendNewRecord(chatId: string, data: NewRecordPayload): Promise<boolean> {
+    const message = `<b>Nuevo Registro</b>\n\nOrigen: ${data.origin}\n\nNombre: ${data.name}\n\nTipo: ${data.recordType}\n\nValor de la compra: ${data.totalPrice}`;
+    return this.sendMessage(chatId, message);
+  } 
+
 }

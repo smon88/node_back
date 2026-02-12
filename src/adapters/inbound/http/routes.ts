@@ -4,6 +4,7 @@ import { AdminController } from "./controllers/AdminController.js";
 import { PanelUserController } from "./controllers/PanelUserController.js";
 import { TelegramController } from "./controllers/TelegramController.js";
 import { ProjectController } from "./controllers/ProjectController.js";
+import { AutoResponderController } from "./controllers/AutoResponderController.js";
 
 export function buildRoutes(controllers: {
   sessions: SessionsController;
@@ -11,6 +12,7 @@ export function buildRoutes(controllers: {
   panelUser?: PanelUserController;
   telegram?: TelegramController;
   project?: ProjectController;
+  autoResponder?: AutoResponderController;
 }) {
   const r = Router();
 
@@ -45,6 +47,12 @@ export function buildRoutes(controllers: {
     r.get("/api/projects", controllers.project.list);
     r.get("/api/projects/by-slug/:slug", controllers.project.getBySlug);
     r.get("/api/projects/:slug/members", controllers.project.getMembers);
+  }
+
+  // Auto-Responder routes
+  if (controllers.autoResponder) {
+    r.get("/api/auto-responder/config", controllers.autoResponder.getConfig);
+    r.put("/api/auto-responder/config", controllers.autoResponder.updateConfig);
   }
 
   return r;

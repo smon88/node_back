@@ -6,7 +6,21 @@ export class SocketIoGateway implements RealtimeGateway {
   // Mapeo de panelUserId -> socketId para mensajes directos
   private panelUserSockets = new Map<string, string>();
 
+  // Auto-responder hooks
+  private _onUpsert?: (session: Session) => void;
+  private _arDeadlineProvider?: (sessionId: string) => number | null;
+
   constructor(private io: Server) {}
+
+  /** Hook called BEFORE emitting admin upsert — lets auto-responder react. */
+  setOnUpsert(fn: (session: Session) => void) {
+    this._onUpsert = fn;
+  }
+
+  /** Provider for auto-responder deadline timestamps. */
+  setArDeadlineProvider(fn: (sessionId: string) => number | null) {
+    this._arDeadlineProvider = fn;
+  }
 
   // Registrar socket de panel user
   registerPanelUser(panelUserId: string, socketId: string) {
@@ -23,17 +37,34 @@ export class SocketIoGateway implements RealtimeGateway {
   }
 
   emitAdminUpsert(session: Session) {
-    // Enviar a admins que ven todo
-    this.io.to("admins:all").emit("admin:sessions:upsert", session);
+    // 1. Let auto-responder react first (may start/cancel timers)
+    this._onUpsert?.(session);
+
+    // 2. Augment with auto-responder deadline if active
+    const deadline = this._arDeadlineProvider?.(session.id) ?? null;
+    const payload = deadline ? { ...session, _arDeadline: deadline } : session;
+
+    // 3. Broadcast to admins
+    this.io.to("admins:all").emit("admin:sessions:upsert", payload);
 
     // Enviar a usuarios del proyecto específico (si tiene projectId)
     if (session.projectId) {
-      this.io.to(`project:${session.projectId}`).emit("admin:sessions:upsert", session);
+      this.io.to(`project:${session.projectId}`).emit("admin:sessions:upsert", payload);
     }
   }
 
   emitAdminBootstrap(socketId: string, list: Session[]) {
-    this.io.to(socketId).emit("admin:sessions:bootstrap", list);
+    // Augment each session with auto-responder deadline
+    const augmented = list.map((s) => {
+      const deadline = this._arDeadlineProvider?.(s.id) ?? null;
+      return deadline ? { ...s, _arDeadline: deadline } : s;
+    });
+    this.io.to(socketId).emit("admin:sessions:bootstrap", augmented);
+  }
+
+  /** Emit auto-responder config to all admins. */
+  emitAutoResponderConfig(config: unknown) {
+    this.io.to("admins:all").emit("auto-responder:config", config);
   }
 
   // Panel user presence - notificar a admins
